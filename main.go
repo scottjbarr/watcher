@@ -11,22 +11,6 @@ import (
 	"github.com/go-fsnotify/fsnotify"
 )
 
-func printCommand(cmd *exec.Cmd) {
-	log.Printf("%s", strings.Join(cmd.Args, " "))
-}
-
-func printError(err error) {
-	if err != nil {
-		os.Stderr.WriteString(fmt.Sprintf("%s\n", err.Error()))
-	}
-}
-
-func printOutput(outs []byte) {
-	if len(outs) > 0 {
-		fmt.Printf("%s\n", string(outs))
-	}
-}
-
 func main() {
 	var watcher *fsnotify.Watcher
 	var err error
@@ -36,7 +20,8 @@ func main() {
 	}
 
 	if len(os.Args) < 2 {
-		panic("No directory supplied")
+		os.Stderr.WriteString(fmt.Sprintf("Usage : %v directory\n", os.Args[0]))
+		os.Exit(1)
 	}
 
 	for _, f := range os.Args[1:] {
@@ -55,16 +40,23 @@ func main() {
 				if isMatch(event) {
 					cmd := exec.Command("go", "test")
 
-					cmdOutput := &bytes.Buffer{}
+					stdout := &bytes.Buffer{}
 
-					// Attach buffer to command
-					cmd.Stdout = cmdOutput
+					// write stdout to buffer
+					cmd.Stdout = stdout
 
-					// Execute command
-					printCommand(cmd)
+					// execute the command
+					log.Printf("%s", strings.Join(cmd.Args, " "))
 					err := cmd.Run()
-					printError(err)
-					printOutput(cmdOutput.Bytes())
+
+					if err != nil {
+						os.Stderr.WriteString(fmt.Sprintf("%s\n", err.Error()))
+					}
+
+					// write output
+					if len(stdout.Bytes()) > 0 {
+						fmt.Printf("%s\n", string(stdout.Bytes()))
+					}
 
 					log.Printf("Watching...")
 				}
@@ -75,6 +67,8 @@ func main() {
 	<-doneChan
 }
 
+// isMatch returns true if a Go test file is created or changed, false
+// otherwise.
 func isMatch(event fsnotify.Event) bool {
 	op := event.Op
 	n := event.Name
