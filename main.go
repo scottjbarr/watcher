@@ -20,7 +20,8 @@ func main() {
 	}
 
 	if len(os.Args) < 2 {
-		os.Stderr.WriteString(fmt.Sprintf("Usage : %v directory\n", os.Args[0]))
+		message := fmt.Sprintf("Usage : %v directory\n", os.Args[0])
+		os.Stderr.WriteString(message)
 		os.Exit(1)
 	}
 
@@ -41,9 +42,11 @@ func main() {
 					cmd := exec.Command("go", "test")
 
 					stdout := &bytes.Buffer{}
+					stderr := &bytes.Buffer{}
 
 					// write stdout to buffer
 					cmd.Stdout = stdout
+					cmd.Stderr = stderr
 
 					// execute the command
 					log.Printf("%s", strings.Join(cmd.Args, " "))
@@ -54,9 +57,8 @@ func main() {
 					}
 
 					// write output
-					if len(stdout.Bytes()) > 0 {
-						fmt.Printf("%s\n", string(stdout.Bytes()))
-					}
+					writeOutput(stdout)
+					writeOutput(stderr)
 
 					log.Printf("Watching...")
 				}
@@ -84,4 +86,14 @@ func isMatch(event fsnotify.Event) bool {
 	}
 
 	return false
+}
+
+func writeOutput(buf *bytes.Buffer) {
+	if buf == nil {
+		return
+	}
+
+	if len(buf.Bytes()) > 0 {
+		fmt.Printf("%s\n", string(buf.Bytes()))
+	}
 }
