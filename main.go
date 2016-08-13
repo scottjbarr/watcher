@@ -2,6 +2,7 @@ package main
 
 import (
 	"bytes"
+	"flag"
 	"fmt"
 	"log"
 	"os"
@@ -15,31 +16,33 @@ func main() {
 	var watcher *fsnotify.Watcher
 	var err error
 
+	var dir = flag.String("d", ".", "directory to watch")
+	var command = flag.String("c", "go test", "command to execute on change")
+
+	flag.Parse()
+
 	if watcher, err = fsnotify.NewWatcher(); err != nil {
 		panic(err)
 	}
 
-	if len(os.Args) < 2 {
-		message := fmt.Sprintf("Usage : %v directory\n", os.Args[0])
-		os.Stderr.WriteString(message)
-		os.Exit(1)
+	log.Printf("Adding directory : %v", *dir)
+
+	if err := watcher.Add(*dir); err != nil {
+		panic(err)
 	}
 
-	for _, f := range os.Args[1:] {
-		log.Printf("Watching directory : %v", f)
-		if err := watcher.Add(f); err != nil {
-			panic(err)
-		}
-	}
-
+	parts := strings.Fields(*command)
 	doneChan := make(chan bool)
+
+	log.Printf("Command : %v", *command)
+	log.Printf("Watching for changes...")
 
 	go func() {
 		for {
 			select {
 			case event := <-watcher.Events:
 				if isMatch(event) {
-					cmd := exec.Command("go", "test")
+					cmd := exec.Command(parts[0], parts[1:]...)
 
 					stdout := &bytes.Buffer{}
 					stderr := &bytes.Buffer{}
@@ -60,7 +63,7 @@ func main() {
 					writeOutput(stdout)
 					writeOutput(stderr)
 
-					log.Printf("Watching...")
+					log.Printf("Watching for changes...")
 				}
 			}
 		}
