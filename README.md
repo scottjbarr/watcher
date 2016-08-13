@@ -1,18 +1,22 @@
 # Watcher
 
-Watches a directory for changes, and runs `go test` when changes to
-`.go` files is detected.
+Watches a directory for changes, and runs a command when changes to
+any *.go file is detected.
 
 It isn't particularly polished, but it works.
 
 ## Usage
 
-    watcher .
+    Usage of watcher:
+      -c string
+            command to execute on change (default "go test")
+      -d string
+            directory to watch (default ".")
 
 ## LICENSE
 
 The MIT License (MIT)
 
-Copyright (c) 2015 Scott Barr
+Copyright (c) 2016 Scott Barr
 
 See [LICENSE.md](LICENSE.md)
