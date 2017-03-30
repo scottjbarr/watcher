@@ -7,6 +7,7 @@ import (
 	"log"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 
 	"github.com/go-fsnotify/fsnotify"
@@ -17,7 +18,7 @@ func main() {
 	var err error
 
 	var dir = flag.String("d", ".", "directory to watch")
-	var command = flag.String("c", "go test", "command to execute on change")
+	var command = flag.String("c", "go test ./...", "command to execute on change")
 
 	flag.Parse()
 
@@ -25,9 +26,17 @@ func main() {
 		panic(err)
 	}
 
-	log.Printf("Adding directory : %v", *dir)
+	err = filepath.Walk(*dir, func(path string, f os.FileInfo, err error) error {
+		if f.IsDir() && !strings.Contains(path, ".git") {
+			log.Printf("Adding directory : %v", path)
+			if err := watcher.Add(path); err != nil {
+				return err
+			}
+		}
+		return nil
+	})
 
-	if err := watcher.Add(*dir); err != nil {
+	if err != nil {
 		panic(err)
 	}
 
